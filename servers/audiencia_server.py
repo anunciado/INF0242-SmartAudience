@@ -11,11 +11,23 @@ mcp = FastMCP("audiencia_server")
 aljava_conn = sqlite3.connect("aljava.db", check_same_thread=False)
 audiencia_conn = sqlite3.connect("audiencia.db", check_same_thread=False)
 
+# Garante que a pasta de termos existe
+os.makedirs("termos", exist_ok=True)
+
 # Cursores
 aljava_cursor = aljava_conn.cursor()
 audiencia_cursor = audiencia_conn.cursor()
 
 def buscar_dados_audiencia(agendamento_id: int) -> dict:
+    """
+    Busca todos os dados relacionados a uma audiência.
+    
+    Args:
+        agendamento_id (int): ID do agendamento da audiência
+        
+    Returns:
+        dict: Dicionário com os dados da audiência ou None se não encontrado
+    """
     # Busca dados do agendamento
     audiencia_cursor.execute("""
         SELECT numero_processo, data_audiencia
@@ -80,8 +92,17 @@ def buscar_dados_audiencia(agendamento_id: int) -> dict:
         "arquivos": arquivos
     }
 
-@mcp.tool(name="gerar_termo_audiencia")
-def gerar_termo_audiencia(agendamento_id: int) -> object:
+@mcp.tool(name="dados_audiencia")
+def dados_audiencia(agendamento_id: int) -> object:
+    """
+    Ferramenta MCP para buscar dados de uma audiência.
+    
+    Args:
+        agendamento_id (int): ID do agendamento da audiência
+        
+    Returns:
+        object: Dicionário com status de sucesso e dados ou erro
+    """
     try:
         dados = buscar_dados_audiencia(agendamento_id)
         if not dados:
@@ -89,6 +110,33 @@ def gerar_termo_audiencia(agendamento_id: int) -> object:
                 "sucesso": False,
                 "erro": f"Agendamento {agendamento_id} não encontrado."
             }
+            
+        return {
+            "sucesso": True,
+            "dados": dados
+        }
+        
+    except Exception as e:
+        return {
+            "sucesso": False,
+            "erro": str(e)
+        }
+
+@mcp.resource("file://termo")
+def gerar_termo_audiencia(agendamento_id: int) -> bytes:
+    """
+    Gera o termo de audiência em PDF.
+    
+    Args:
+        agendamento_id (int): ID do agendamento da audiência
+        
+    Returns:
+        bytes: Conteúdo do arquivo PDF em bytes
+    """
+    try:
+        dados = buscar_dados_audiencia(agendamento_id)
+        if not dados:
+            raise Exception(f"Agendamento {agendamento_id} não encontrado.")
         
         # Cria diretório para os termos se não existir
         os.makedirs("termos", exist_ok=True)
@@ -99,17 +147,12 @@ def gerar_termo_audiencia(agendamento_id: int) -> object:
         # Gera o PDF
         gerar_termo_pdf(dados, caminho_pdf)
         
-        return {
-            "sucesso": True,
-            "mensagem": "Termo de audiência gerado com sucesso",
-            "caminho": caminho_pdf
-        }
+        # Lê e retorna o conteúdo do arquivo em bytes
+        with open(caminho_pdf, "rb") as f:
+            return f.read()
         
     except Exception as e:
-        return {
-            "sucesso": False,
-            "erro": str(e)
-        }
+        raise Exception(str(e))
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

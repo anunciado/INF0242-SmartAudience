@@ -1,7 +1,23 @@
 from fpdf import FPDF
 import os
 
-def gerar_termo_pdf(dados, caminho):
+def gerar_termo_pdf(dados: dict, caminho: str) -> None:
+    """
+    Gera um PDF com o termo de audiência.
+    
+    Args:
+        dados (dict): Dicionário contendo os dados da audiência:
+            - numero_processo (str): Número do processo
+            - data (str): Data da audiência
+            - participantes (list): Lista de participantes com nome e código
+            - transcricao (str): Texto da transcrição
+            - impugnacoes (list): Lista de impugnações
+            - arquivos (list): Lista de arquivos da Aljava
+        caminho (str): Caminho onde o arquivo PDF será salvo
+        
+    Returns:
+        None: Salva o arquivo PDF no caminho especificado
+    """
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)

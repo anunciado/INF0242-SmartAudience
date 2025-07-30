@@ -35,6 +35,15 @@ conn.commit()
 
 # Função utilitária para validar horário e conflito
 def pode_agendar(data_inicio: datetime) -> bool:
+    """
+    Verifica se é possível realizar agendamento na data/hora especificada.
+    
+    Args:
+        data_inicio (datetime): Data e hora do agendamento
+        
+    Returns:
+        bool: True se é possível agendar, False caso contrário
+    """
     # Verifica se é dia útil (segunda a sexta)
     if calendar.weekday(data_inicio.year, data_inicio.month, data_inicio.day) >= 5:
         return False
@@ -45,6 +54,16 @@ def pode_agendar(data_inicio: datetime) -> bool:
 
 @mcp.tool(name="agendar")
 def agendar(numero_processo: str, data_inicio: str) -> str:
+    """
+    Agenda uma audiência para um processo.
+    
+    Args:
+        numero_processo (str): Número do processo
+        data_inicio (str): Data e hora de início no formato "YYYY-MM-DD HH:MM"
+        
+    Returns:
+        str: Mensagem de sucesso ou erro, incluindo sugestões de horários em caso de conflito
+    """
     try:
         inicio_dt = datetime.strptime(data_inicio, "%Y-%m-%d %H:%M")
     except ValueError:
@@ -107,6 +126,16 @@ def agendar(numero_processo: str, data_inicio: str) -> str:
 
 @mcp.tool(name="listar_agendamentos_periodo")
 def listar_agendamentos_periodo(data_inicio: str, data_fim: str) -> str:
+    """
+    Lista agendamentos em um período específico.
+    
+    Args:
+        data_inicio (str): Data inicial no formato "YYYY-MM-DD"
+        data_fim (str): Data final no formato "YYYY-MM-DD"
+        
+    Returns:
+        str: Lista formatada de agendamentos ou mensagem de que nada foi encontrado
+    """
     try:
         inicio = datetime.strptime(data_inicio, "%Y-%m-%d")
         fim = datetime.strptime(data_fim, "%Y-%m-%d")
@@ -133,6 +162,12 @@ def listar_agendamentos_periodo(data_inicio: str, data_fim: str) -> str:
 
 @mcp.tool(name="listar_agendamentos_hoje")
 def listar_agendamentos_hoje() -> str:
+    """
+    Lista todos os agendamentos do dia atual.
+    
+    Returns:
+        str: Lista formatada de agendamentos ou mensagem de que nada foi encontrado
+    """
     hoje = datetime.now().date()
     
     cursor.execute("""
@@ -155,6 +190,15 @@ def listar_agendamentos_hoje() -> str:
 
 @mcp.tool(name="buscar_agendamento_processo")
 def buscar_agendamento_processo(numero_processo: str) -> str:
+    """
+    Busca agendamentos de um processo específico.
+    
+    Args:
+        numero_processo (str): Número do processo
+        
+    Returns:
+        str: Lista formatada de agendamentos ou mensagem de que nada foi encontrado
+    """
     # Valida o Número do Processo
     validator = InputValidator()
     numero_processo_valido, resultado = validator.validar_processo(numero_processo)
@@ -183,6 +227,17 @@ def buscar_agendamento_processo(numero_processo: str) -> str:
 
 @mcp.tool(name="inserir_participante")
 def inserir_participante(nome: str, cpf: str, agendamento_id: int) -> str:
+    """
+    Insere um novo participante em um agendamento.
+    
+    Args:
+        nome (str): Nome do participante
+        cpf (str): CPF do participante
+        agendamento_id (int): ID do agendamento
+        
+    Returns:
+        str: Mensagem de sucesso ou erro
+    """
     # Valida CPF
     validator = InputValidator()
     cpf_valido, resultado = validator.validar_cpf(cpf)

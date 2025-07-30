@@ -1,7 +1,7 @@
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from utils.database import conn
-from utils.date import agora
+from datetime import datetime
 import speech_recognition as sr
 import os
 
@@ -11,7 +11,18 @@ AGUARDANDO_TEXTO = 1
 AGUARDANDO_AUDIO = 2
 
 async def impugnacao_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Inicia o processo de impugnação"""
+    """
+    Inicia o processo de impugnação.
+
+    Args:
+        update (Update): Objeto Update do Telegram contendo informações da mensagem
+        context (ContextTypes.DEFAULT_TYPE): Contexto do bot contendo os argumentos passados 
+                                          no comando (/impugnacao <número>)
+
+    Returns:
+        ESCOLHA_TIPO: Estado para aguardar escolha do tipo de entrada
+        ConversationHandler.END: Se ocorrer erro ou argumentos não forem fornecidos
+    """
     try:
         args = context.args
         if not args:
@@ -35,7 +46,18 @@ async def impugnacao_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
 async def escolha_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processa a escolha do tipo de entrada"""
+    """
+    Processa a escolha do tipo de entrada (texto ou áudio).
+
+    Args:
+        update (Update): Objeto Update do Telegram contendo informações da mensagem
+        context (ContextTypes.DEFAULT_TYPE): Contexto do bot
+
+    Returns:
+        AGUARDANDO_TEXTO: Estado para aguardar entrada de texto
+        AGUARDANDO_AUDIO: Estado para aguardar entrada de áudio
+        ConversationHandler.END: Se opção inválida for escolhida
+    """
     escolha = update.message.text
     
     if escolha == 'Texto':
@@ -60,7 +82,16 @@ async def escolha_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
 async def receber_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processa a entrada de texto"""
+    """
+    Processa a entrada de texto da impugnação.
+
+    Args:
+        update (Update): Objeto Update do Telegram contendo informações da mensagem
+        context (ContextTypes.DEFAULT_TYPE): Contexto do bot contendo o número do processo
+
+    Returns:
+        ConversationHandler.END: Finaliza a conversa após processar o texto ou em caso de erro
+    """
     try:
         numero = context.user_data['numero']
         descricao = update.message.text
@@ -68,7 +99,7 @@ async def receber_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cursor = conn.cursor()
         cursor.execute(
             "INSERT INTO impugnacao (numero_processo, descricao, data_cadastro) VALUES (?, ?, ?)",
-            (numero, descricao, agora())
+            (numero, descricao, datetime.now().strftime("%Y-%m-%d %H:%M"))
         )
         conn.commit()
         
@@ -80,7 +111,16 @@ async def receber_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
 async def receber_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Processa a entrada de áudio"""
+    """
+    Processa a entrada de áudio da impugnação.
+    
+    Args:
+        update (Update): Objeto Update do Telegram contendo a mensagem com o arquivo de áudio
+        context (ContextTypes.DEFAULT_TYPE): Contexto do bot contendo o número do processo
+
+    Returns:
+        ConversationHandler.END: Finaliza a conversa após processar o áudio ou em caso de erro
+    """
     try:
         numero = context.user_data['numero']
         
@@ -99,7 +139,7 @@ async def receber_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO impugnacao (numero_processo, descricao, data_cadastro) VALUES (?, ?, ?)",
-                (numero, descricao, agora())
+                (numero, descricao, datetime.now().strftime("%Y-%m-%d %H:%M"))
             )
             conn.commit()
             

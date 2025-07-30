@@ -13,7 +13,8 @@ Attributes:
 import os
 from dotenv import load_dotenv
 from telegram.ext import Application, CommandHandler, ConversationHandler, MessageHandler, filters
-from handlers import start, ajuda, agendamentos, checkin, impugnacao, cancela
+from handlers import start, ajuda, agendamentos, checkin, impugnacao, cancela, transcricao
+from telegram.ext import CommandHandler
 
 # Carrega variáveis de ambiente
 load_dotenv()
@@ -27,6 +28,8 @@ app.add_handler(CommandHandler("start", start.start))
 app.add_handler(CommandHandler("ajuda", ajuda.ajuda))
 app.add_handler(CommandHandler("checkin", checkin.checkin))
 app.add_handler(CommandHandler("agendamentos", agendamentos.agendamentos))
+app.add_handler(CommandHandler("transcricao", transcricao.transcricao))
+app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, transcricao.processar_audio))
 
 # Configura o conversation handler para o fluxo de impugnação
 impugnacao_handler = ConversationHandler(

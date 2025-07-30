@@ -2,21 +2,29 @@ import sqlite3
 from mcp.server.fastmcp import FastMCP
 from datetime import datetime
 import os
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz do projeto ao PYTHONPATH
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from utils.pdf import gerar_termo_pdf
 
 # Inicializa o servidor FastMCP
-mcp = FastMCP("audiencia_server")
+mcp = FastMCP("avis_server")
 
 # Conexões com os bancos de dados
 aljava_conn = sqlite3.connect("aljava.db", check_same_thread=False)
-audiencia_conn = sqlite3.connect("audiencia.db", check_same_thread=False)
+avis_conn = sqlite3.connect("avis.db", check_same_thread=False)
 
 # Garante que a pasta de termos existe
 os.makedirs("termos", exist_ok=True)
 
 # Cursores
 aljava_cursor = aljava_conn.cursor()
-audiencia_cursor = audiencia_conn.cursor()
+avis_cursor = avis_conn.cursor()
 
 def buscar_dados_audiencia(agendamento_id: int) -> dict:
     """
@@ -29,31 +37,31 @@ def buscar_dados_audiencia(agendamento_id: int) -> dict:
         dict: Dicionário com os dados da audiência ou None se não encontrado
     """
     # Busca dados do agendamento
-    audiencia_cursor.execute("""
-        SELECT numero_processo, data_audiencia
+    avis_cursor.execute("""
+        SELECT numero_processo, data_inicio, data_fim
         FROM agendamento 
         WHERE id = ?
     """, (agendamento_id,))
-    agendamento = audiencia_cursor.fetchone()
+    agendamento = avis_cursor.fetchone()
     
     if not agendamento:
         return None
     
     # Busca participantes
-    audiencia_cursor.execute("""
-        SELECT nome, tipo, presente
+    avis_cursor.execute("""
+        SELECT nome, cpf, presente
         FROM participante
         WHERE agendamento_id = ?
     """, (agendamento_id,))
-    participantes = audiencia_cursor.fetchall()
+    participantes = avis_cursor.fetchall()
     
     # Busca impugnações
-    audiencia_cursor.execute("""
+    aljava_cursor.execute("""
         SELECT texto
         FROM impugnacao
         WHERE agendamento_id = ?
     """, (agendamento_id,))
-    impugnacoes = [imp[0] for imp in audiencia_cursor.fetchall()]
+    impugnacoes = aljava_cursor.fetchall()
     
     # Busca transcrição do aljava
     aljava_cursor.execute("""
@@ -61,7 +69,7 @@ def buscar_dados_audiencia(agendamento_id: int) -> dict:
         FROM transcricao
         WHERE agendamento_id = ?
     """, (agendamento_id,))
-    transcricao = aljava_cursor.fetchone()
+    transcricoes = aljava_cursor.fetchall()
     
     # Busca arquivos do processo no aljava
     aljava_cursor.execute("""
@@ -76,18 +84,19 @@ def buscar_dados_audiencia(agendamento_id: int) -> dict:
     # Organiza participantes presentes e ausentes
     presentes = []
     ausentes = []
-    for nome, tipo, presente in participantes:
+    for nome, cpf, presente in participantes:
         if presente:
-            presentes.append({"nome": nome, "tipo": tipo, "codigo": f"{tipo[:3]}{len(presentes)+1}"})
+            presentes.append({"nome": nome, "cpf": cpf})
         else:
-            ausentes.append({"nome": nome, "tipo": tipo})
+            ausentes.append({"nome": nome, "cpf": cpf})
     
     return {
         "numero_processo": agendamento[0],
-        "data": agendamento[1],
+        "data_inicio": agendamento[1],
+        "data_fim": agendamento[2],
         "participantes": presentes,
         "ausentes": ausentes,
-        "transcricao": transcricao[0] if transcricao else None,
+        "transcricoes": transcricoes,
         "impugnacoes": impugnacoes,
         "arquivos": arquivos
     }
@@ -121,38 +130,6 @@ def dados_audiencia(agendamento_id: int) -> object:
             "sucesso": False,
             "erro": str(e)
         }
-
-@mcp.resource("file://termo")
-def gerar_termo_audiencia(agendamento_id: int) -> bytes:
-    """
-    Gera o termo de audiência em PDF.
-    
-    Args:
-        agendamento_id (int): ID do agendamento da audiência
-        
-    Returns:
-        bytes: Conteúdo do arquivo PDF em bytes
-    """
-    try:
-        dados = buscar_dados_audiencia(agendamento_id)
-        if not dados:
-            raise Exception(f"Agendamento {agendamento_id} não encontrado.")
-        
-        # Cria diretório para os termos se não existir
-        os.makedirs("termos", exist_ok=True)
-        
-        # Define o caminho do arquivo PDF
-        caminho_pdf = f"termos/termo_audiencia_{agendamento_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        
-        # Gera o PDF
-        gerar_termo_pdf(dados, caminho_pdf)
-        
-        # Lê e retorna o conteúdo do arquivo em bytes
-        with open(caminho_pdf, "rb") as f:
-            return f.read()
-        
-    except Exception as e:
-        raise Exception(str(e))
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

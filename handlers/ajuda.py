@@ -17,7 +17,8 @@ Comandos disponíveis:
 /start – Mensagem de boas-vindas
 /ajuda – Lista de comandos
 /checkin <código> – Check-in do participante
-/impugnacao <número> – Registra impugnação (escolha entre texto ou áudio)
+/impugnacao <número> <código> – Registra impugnação (escolha entre texto ou áudio)
+/transcricao <agendamento> – Registra transcrição da audiência
 /agendamentos <cpf> – Busca agendamentos futuros por CPF
 /cancela - Cancela a operação atual
 """)

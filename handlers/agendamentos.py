@@ -1,8 +1,18 @@
+import sqlite3
+import os
 from telegram import Update
 from telegram.ext import ContextTypes
-from utils.database import conn
 from datetime import datetime
 from utils.validator import InputValidator
+from pathlib import Path
+
+# Obtém o caminho absoluto para o diretório do projeto
+project_root = Path(__file__).parent.parent
+db_path = os.path.join(project_root, "servers", "avis.db")
+
+# Conecta ao banco SQLite usando caminho absoluto
+conn = sqlite3.connect(db_path, check_same_thread=False)
+cursor = conn.cursor()
 
 async def agendamentos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

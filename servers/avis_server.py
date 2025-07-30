@@ -1,9 +1,17 @@
 import sqlite3
 from datetime import datetime, timedelta
 import calendar
-from utils.validator import InputValidator
-
+import sys
+from pathlib import Path
 from mcp.server.fastmcp import FastMCP
+
+# Adiciona o diretório raiz do projeto ao PYTHONPATH
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from utils.validator import InputValidator
+from utils.codigo_unico import gerar_codigo_unico
 
 # Inicializa o servidor MCP com nome "avis_server"
 mcp = FastMCP("avis_server")
@@ -21,13 +29,15 @@ CREATE TABLE IF NOT EXISTS agendamento (
 )
 """)
 
-# Adicione este código após a criação da tabela agendamento
+# Modifique a criação da tabela participante para incluir as colunas faltantes
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS participante (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     cpf TEXT NOT NULL,
     agendamento_id INTEGER NOT NULL,
+    presente BOOLEAN DEFAULT 0,
+    codigo_unico TEXT NOT NULL,
     FOREIGN KEY (agendamento_id) REFERENCES agendamento (id)
 )
 """)
@@ -155,7 +165,11 @@ def listar_agendamentos_periodo(data_inicio: str, data_fim: str) -> str:
     
     resultado = f"Agendamentos de {data_inicio} a {data_fim}:\n"
     for processo, data in agendamentos:
-        data_formatada = datetime.strptime(data, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y %H:%M")
+        # Alterado para tratar tanto formato com segundos quanto sem segundos
+        try:
+            data_formatada = datetime.strptime(data, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y %H:%M")
+        except ValueError:
+            data_formatada = datetime.strptime(data, "%Y-%m-%d %H:%M").strftime("%d/%m/%Y %H:%M")
         resultado += f"Processo: {processo} - Horário: {data_formatada}\n"
     
     return resultado
@@ -238,6 +252,7 @@ def inserir_participante(nome: str, cpf: str, agendamento_id: int) -> str:
     Returns:
         str: Mensagem de sucesso ou erro
     """
+
     # Valida CPF
     validator = InputValidator()
     cpf_valido, resultado = validator.validar_cpf(cpf)
@@ -265,14 +280,17 @@ def inserir_participante(nome: str, cpf: str, agendamento_id: int) -> str:
         return f"Erro: Participante com CPF {cpf} já está cadastrado neste agendamento."
     
     try:
+        # Gera código único para o participante
+        codigo_unico = gerar_codigo_unico()
+        
         # Insere o novo participante
         cursor.execute("""
-            INSERT INTO participante (nome, cpf, agendamento_id)
-            VALUES (?, ?, ?)
-        """, (nome, cpf, agendamento_id))
+            INSERT INTO participante (nome, cpf, agendamento_id, presente, codigo_unico)
+            VALUES (?, ?, ?, 0, ?)
+        """, (nome, cpf, agendamento_id, codigo_unico))
         conn.commit()
         
-        return f"Participante {nome} (CPF: {cpf}) cadastrado com sucesso no agendamento {agendamento_id}."
+        return f"Participante {nome} (CPF: {cpf}) cadastrado com sucesso no agendamento {agendamento_id}. Código único: {codigo_unico}"
     except sqlite3.Error as e:
         conn.rollback()
         return f"Erro ao cadastrar participante: {str(e)}"

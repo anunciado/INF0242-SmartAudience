@@ -38,6 +38,98 @@ SmartAudience é um bot do Telegram que gerencia audiências para a disciplina I
 - Aljava, sistema de gerenciamento de mídias processuais da Justiça Federal no Rio Grande do Norte (JFRN);
 - AVIS, sistema de agendamentos de audiências, vídeos e salas da JFRN.
 
+## Diagrama Resumido do Projeto
+
+```mermaid
+flowchart TD
+    %% Global entities
+    Users["Telegram Users"]:::external
+    TelegramAPI["Telegram Bot API"]:::external
+
+    %% Bot Layer
+    subgraph "SmartAudience Bot (Python 3.10, python-telegram-bot)" 
+        direction TB
+        Entry["main.py"]:::internal
+        Handlers["Handlers Module"]:::internal
+        Validator["Core Validation\n(utils/validator.py)"]:::util
+        UUIDMod["UUID Utility\n(utils/uuid.py)"]:::util
+        PDFGen["PDF Generator\n(PyFPDF)"]:::util
+        Speech["Speech Recognition\n(speech_recognition)"]:::util
+        MCPClient["MCP Client\n(Guardrails AI)"]:::internal
+    end
+
+    %% MCP Microservices
+    subgraph "MCP Micro-services" 
+        direction TB
+        AljavaSvc["aljava_server\n(uvicorn + MCP, SQLite)"]:::mcp
+        AvisSvc["avis_server\n(uvicorn + MCP, SQLite)"]:::mcp
+        AudSvc["audiencia_server\n(uvicorn + MCP)"]:::mcp
+    end
+
+    %% Databases
+    subgraph "SQLite Databases"
+        direction TB
+        AljavaDB["aljava.db"]:::db
+        AvisDB["avis.db"]:::db
+    end
+
+    %% Static Storage & Dumps
+    midias["Static Media Storage\n(midias/)"]:::util
+    subgraph "DB Init Dumps"
+        direction TB
+        DumpAljava["aljava_dump.sql"]:::db
+        DumpAvis["avis_dump.sql"]:::db
+    end
+
+    %% Connections
+    Users -->|"messages"| TelegramAPI
+    TelegramAPI -->|"webhook\nlong polling"| Entry
+
+    Entry -->|"routes to"| Handlers
+
+    Handlers -->|"validate data"| Validator
+    Handlers -->|"generate uuid"| UUIDMod
+    Handlers -->|"generate pdf"| PDFGen
+    PDFGen -->|"store files"| midias
+    Handlers -->|"send media"| TelegramAPI
+
+    Handlers -->|"speech input"| Speech
+    Speech -->|"text output"| Handlers
+
+    Handlers -->|"AI suggestions"| MCPClient
+    MCPClient -->|"RPC call"| AljavaSvc
+    MCPClient -->|"RPC call"| AvisSvc
+    MCPClient -->|"RPC call"| AudSvc
+
+    AljavaSvc -->|"reads/writes"| AljavaDB
+    AvisSvc -->|"reads/writes"| AvisDB
+
+    DumpAljava -->|"init"| AljavaDB
+    DumpAvis -->|"init"| AvisDB
+
+    %% Click Events
+    click Entry "https://github.com/anunciado/inf0242-smartaudience/blob/main/main.py"
+    click Handlers "https://github.com/anunciado/inf0242-smartaudience/tree/main/handlers/"
+    click Validator "https://github.com/anunciado/inf0242-smartaudience/blob/main/utils/validator.py"
+    click UUIDMod "https://github.com/anunciado/inf0242-smartaudience/blob/main/utils/uuid.py"
+    click PDFGen "https://github.com/anunciado/inf0242-smartaudience/blob/main/utils/pdf.py"
+    click midias "https://github.com/anunciado/inf0242-smartaudience/tree/main/midias/"
+    click DumpAljava "https://github.com/anunciado/inf0242-smartaudience/blob/main/dumps/aljava_dump.sql"
+    click DumpAvis "https://github.com/anunciado/inf0242-smartaudience/blob/main/dumps/avis_dump.sql"
+    click AljavaSvc "https://github.com/anunciado/inf0242-smartaudience/blob/main/servers/aljava_server.py"
+    click AvisSvc "https://github.com/anunciado/inf0242-smartaudience/blob/main/servers/avis_server.py"
+    click AudSvc "https://github.com/anunciado/inf0242-smartaudience/blob/main/servers/audiencia_server.py"
+    click AljavaDB "https://github.com/anunciado/inf0242-smartaudience/blob/main/servers/aljava.db"
+    click AvisDB "https://github.com/anunciado/inf0242-smartaudience/blob/main/servers/avis.db"
+
+    %% Styles
+    classDef external fill:#D0E6FF,stroke:#0288D1,color:#000
+    classDef internal fill:#D0EFFF,stroke:#1565C0,color:#000
+    classDef util fill:#E8F5E9,stroke:#43A047,color:#000
+    classDef mcp fill:#FFF3E0,stroke:#FB8C00,color:#000
+    classDef db fill:#ECEFF1,stroke:#78909C,color:#000
+```
+
 ## Configuração do ambiente de desenvolvimento
 
 1. Instale o python, na versão 3.10, através do [link](https://www.python.org/downloads/);

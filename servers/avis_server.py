@@ -238,6 +238,8 @@ def inserir_participante(nome: str, cpf: str, agendamento_id: int) -> str:
     Returns:
         str: Mensagem de sucesso ou erro
     """
+    from utils.uuid import gerar_codigo_unico  # Importando a função
+    
     # Valida CPF
     validator = InputValidator()
     cpf_valido, resultado = validator.validar_cpf(cpf)
@@ -265,14 +267,17 @@ def inserir_participante(nome: str, cpf: str, agendamento_id: int) -> str:
         return f"Erro: Participante com CPF {cpf} já está cadastrado neste agendamento."
     
     try:
+        # Gera código único para o participante
+        codigo_unico = gerar_codigo_unico()
+        
         # Insere o novo participante
         cursor.execute("""
-            INSERT INTO participante (nome, cpf, agendamento_id)
-            VALUES (?, ?, ?)
-        """, (nome, cpf, agendamento_id))
+            INSERT INTO participante (nome, cpf, agendamento_id, presente, codigo_unico)
+            VALUES (?, ?, ?, 0, ?)
+        """, (nome, cpf, agendamento_id, codigo_unico))
         conn.commit()
         
-        return f"Participante {nome} (CPF: {cpf}) cadastrado com sucesso no agendamento {agendamento_id}."
+        return f"Participante {nome} (CPF: {cpf}) cadastrado com sucesso no agendamento {agendamento_id}. Código único: {codigo_unico}"
     except sqlite3.Error as e:
         conn.rollback()
         return f"Erro ao cadastrar participante: {str(e)}"

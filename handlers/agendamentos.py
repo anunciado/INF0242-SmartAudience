@@ -1,8 +1,12 @@
+import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
-from utils.database import conn
 from datetime import datetime
 from utils.validator import InputValidator
+
+# Conecta ao banco SQLite
+conn = sqlite3.connect("avis.db", check_same_thread=False)
+cursor = conn.cursor()
 
 async def agendamentos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """

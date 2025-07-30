@@ -39,11 +39,20 @@ CREATE TABLE IF NOT EXISTS processo_arquivo (
 )
 """)
 
-# Nova tabela de Transcrição
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS transcricao (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     texto TEXT NOT NULL,
+    agendamento_id INTEGER NOT NULL,
+    data_cadastro TEXT NOT NULL
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS impugnacao (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    texto TEXT NOT NULL,
+    participante_id INTEGER NOT NULL,
     agendamento_id INTEGER NOT NULL,
     data_cadastro TEXT NOT NULL
 )

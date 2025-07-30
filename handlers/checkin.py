@@ -1,6 +1,10 @@
+import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
-from utils.database import conn
+
+# Conecta ao banco SQLite
+conn = sqlite3.connect("avis.db", check_same_thread=False)
+cursor = conn.cursor()
 
 async def checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
@@ -16,7 +20,7 @@ async def checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         _, codigo = update.message.text.split()
         cursor = conn.cursor()
-        cursor.execute("UPDATE participante SET participou = 1 WHERE codigo_unico = ?", (codigo,))
+        cursor.execute("UPDATE participante SET presente = 1 WHERE codigo_unico = ?", (codigo,))
         if cursor.rowcount:
             conn.commit()
             await update.message.reply_text("Check-in realizado com sucesso.")

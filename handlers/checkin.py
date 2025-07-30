@@ -1,9 +1,15 @@
 import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
+from pathlib import Path
+import os
 
-# Conecta ao banco SQLite
-conn = sqlite3.connect("avis.db", check_same_thread=False)
+# Obtém o caminho absoluto para o diretório do projeto
+project_root = Path(__file__).parent.parent
+db_path = os.path.join(project_root, "servers", "avis.db")
+
+# Conecta ao banco SQLite usando caminho absoluto
+conn = sqlite3.connect(db_path, check_same_thread=False)
 cursor = conn.cursor()
 
 async def checkin(update: Update, context: ContextTypes.DEFAULT_TYPE):

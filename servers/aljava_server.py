@@ -183,7 +183,7 @@ def transcrever_audio(numero_processo: str, agendamento_id: int, audio: bytes) -
             "erro": str(e)
         }
 
-@mcp.resource("file://arquivo")
+@mcp.resource("file://arquivo/{nome_arquivo}")
 def retornar_arquivo(nome_arquivo: str) -> bytes:
     """
     Retorna o conteúdo de um arquivo.

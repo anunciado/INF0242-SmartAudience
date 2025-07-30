@@ -32,9 +32,6 @@ app.add_handler(CommandHandler("agendamentos", agendamentos.agendamentos))
 impugnacao_handler = ConversationHandler(
     entry_points=[CommandHandler("impugnacao", impugnacao.impugnacao_start)],
     states={
-        impugnacao.ESCOLHA_TIPO: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, impugnacao.escolha_tipo)
-        ],
         impugnacao.AGUARDANDO_TEXTO: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, impugnacao.receber_texto)
         ],

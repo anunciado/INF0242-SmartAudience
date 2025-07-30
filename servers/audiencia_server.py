@@ -2,21 +2,29 @@ import sqlite3
 from mcp.server.fastmcp import FastMCP
 from datetime import datetime
 import os
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz do projeto ao PYTHONPATH
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 from utils.pdf import gerar_termo_pdf
 
 # Inicializa o servidor FastMCP
-mcp = FastMCP("audiencia_server")
+mcp = FastMCP("avis_server")
 
 # Conexões com os bancos de dados
 aljava_conn = sqlite3.connect("aljava.db", check_same_thread=False)
-audiencia_conn = sqlite3.connect("audiencia.db", check_same_thread=False)
+avis_conn = sqlite3.connect("avis.db", check_same_thread=False)
 
 # Garante que a pasta de termos existe
 os.makedirs("termos", exist_ok=True)
 
 # Cursores
 aljava_cursor = aljava_conn.cursor()
-audiencia_cursor = audiencia_conn.cursor()
+avis_cursor = avis_conn.cursor()
 
 def buscar_dados_audiencia(agendamento_id: int) -> dict:
     """
@@ -29,31 +37,31 @@ def buscar_dados_audiencia(agendamento_id: int) -> dict:
         dict: Dicionário com os dados da audiência ou None se não encontrado
     """
     # Busca dados do agendamento
-    audiencia_cursor.execute("""
-        SELECT numero_processo, data_audiencia
+    avis_cursor.execute("""
+        SELECT numero_processo, data_avis
         FROM agendamento 
         WHERE id = ?
     """, (agendamento_id,))
-    agendamento = audiencia_cursor.fetchone()
+    agendamento = avis_cursor.fetchone()
     
     if not agendamento:
         return None
     
     # Busca participantes
-    audiencia_cursor.execute("""
+    avis_cursor.execute("""
         SELECT nome, tipo, presente
         FROM participante
         WHERE agendamento_id = ?
     """, (agendamento_id,))
-    participantes = audiencia_cursor.fetchall()
+    participantes = avis_cursor.fetchall()
     
     # Busca impugnações
-    audiencia_cursor.execute("""
+    avis_cursor.execute("""
         SELECT texto
         FROM impugnacao
         WHERE agendamento_id = ?
     """, (agendamento_id,))
-    impugnacoes = [imp[0] for imp in audiencia_cursor.fetchall()]
+    impugnacoes = [imp[0] for imp in avis_cursor.fetchall()]
     
     # Busca transcrição do aljava
     aljava_cursor.execute("""
@@ -122,7 +130,7 @@ def dados_audiencia(agendamento_id: int) -> object:
             "erro": str(e)
         }
 
-@mcp.resource("file://termo")
+@mcp.resource("file://termo/{agendamento_id}")
 def gerar_termo_audiencia(agendamento_id: int) -> bytes:
     """
     Gera o termo de audiência em PDF.

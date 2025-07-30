@@ -1,9 +1,17 @@
 import sqlite3
 from datetime import datetime, timedelta
 import calendar
-from utils.validator import InputValidator
-
+import sys
+from pathlib import Path
 from mcp.server.fastmcp import FastMCP
+
+# Adiciona o diretório raiz do projeto ao PYTHONPATH
+project_root = str(Path(__file__).parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from utils.validator import InputValidator
+from utils.codigo_unico import gerar_codigo_unico
 
 # Inicializa o servidor MCP com nome "avis_server"
 mcp = FastMCP("avis_server")
@@ -21,13 +29,15 @@ CREATE TABLE IF NOT EXISTS agendamento (
 )
 """)
 
-# Adicione este código após a criação da tabela agendamento
+# Modifique a criação da tabela participante para incluir as colunas faltantes
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS participante (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     cpf TEXT NOT NULL,
     agendamento_id INTEGER NOT NULL,
+    presente BOOLEAN DEFAULT 0,
+    codigo_unico TEXT NOT NULL,
     FOREIGN KEY (agendamento_id) REFERENCES agendamento (id)
 )
 """)
@@ -238,8 +248,7 @@ def inserir_participante(nome: str, cpf: str, agendamento_id: int) -> str:
     Returns:
         str: Mensagem de sucesso ou erro
     """
-    from utils.uuid import gerar_codigo_unico  # Importando a função
-    
+
     # Valida CPF
     validator = InputValidator()
     cpf_valido, resultado = validator.validar_cpf(cpf)

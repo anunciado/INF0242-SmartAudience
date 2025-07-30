@@ -3,11 +3,17 @@ from telegram import Update, ReplyKeyboardRemove, ReplyKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
 from datetime import datetime
 import speech_recognition as sr
+from pathlib import Path
 import os
 
+# Obtém o caminho absoluto para o diretório do projeto
+project_root = Path(__file__).parent.parent
+db_aljava_path = os.path.join(project_root, "servers", "aljava.db")
+db_avis_path = os.path.join(project_root, "servers", "avis.db")
+
 # Conexões com os bancos de dados
-aljava_conn = sqlite3.connect("aljava.db", check_same_thread=False)
-avis_conn = sqlite3.connect("avis.db", check_same_thread=False)
+aljava_conn = sqlite3.connect(db_aljava_path, check_same_thread=False)
+avis_conn = sqlite3.connect(db_avis_path, check_same_thread=False)
 
 # Cursores
 aljava_cursor = aljava_conn.cursor()

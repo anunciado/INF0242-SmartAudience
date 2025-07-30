@@ -27,7 +27,6 @@ SmartAudience é um bot do Telegram que gerencia audiências para a disciplina I
 
 - Python 3, uma linguagem de programação de alto nível e de propósito geral;
 - Model Context Protocol (MCP), um protocolo que permite a criação e gerenciamento de contextos para modelos de IA;
-- Guardrails AI, uma biblioteca para adicionar restrições e validações em modelos de IA;
 - PyFPDF, uma biblioteca para geração de documentos PDF em Python;
 - Python Telegram Bot, uma interface Python para a API do Telegram Bot;
 - SQLite, um sistema de gerenciamento de banco de dados relacional leve e autocontido;

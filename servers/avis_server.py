@@ -165,7 +165,11 @@ def listar_agendamentos_periodo(data_inicio: str, data_fim: str) -> str:
     
     resultado = f"Agendamentos de {data_inicio} a {data_fim}:\n"
     for processo, data in agendamentos:
-        data_formatada = datetime.strptime(data, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y %H:%M")
+        # Alterado para tratar tanto formato com segundos quanto sem segundos
+        try:
+            data_formatada = datetime.strptime(data, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y %H:%M")
+        except ValueError:
+            data_formatada = datetime.strptime(data, "%Y-%m-%d %H:%M").strftime("%d/%m/%Y %H:%M")
         resultado += f"Processo: {processo} - Horário: {data_formatada}\n"
     
     return resultado

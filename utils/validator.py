@@ -73,29 +73,5 @@ class InputValidator:
         # Valida o formato usando regex
         if not self._processo_regex.match(processo):
             return False, "Formato inválido. Use: NNNNNNN-DD.AAAA.J.TR.OOOO"
-        
-        # Divide o número do processo em suas partes
-        partes = processo.replace('.', '-').split('-')
-        
-        try:
-            numero_base = int(partes[0])
-            digito = int(partes[1][:2])
-            ano = int(partes[1][3:7])
-            justica = int(partes[1][8])
-            tribunal = int(partes[1][11:13])
-            origem = int(partes[1][14:])
-            
-            # Validações básicas
-            if ano < 1950 or ano > 2100:
-                return False, "Ano do processo inválido"
-            
-            if justica not in range(1, 10):
-                return False, "Código da Justiça inválido"
-            
-            if tribunal < 1:
-                return False, "Código do Tribunal inválido"
-                
-            return True, processo
-            
-        except ValueError:
-            return False, "Número do processo contém valores inválidos"
+
+        return True, processo

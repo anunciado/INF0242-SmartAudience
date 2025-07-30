@@ -43,7 +43,7 @@ async def impugnacao_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Por favor, forneça o código único do participante: /impugnacao <código>"
             )
             return ConversationHandler.END
-        
+
         codigo = args[0]
         
         # Busca o agendamento relacionado ao participante
@@ -51,7 +51,7 @@ async def impugnacao_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             SELECT a.id, p.id
             FROM agendamento a
             INNER JOIN participante p ON p.agendamento_id = a.id
-            WHERE p.codigo = ?
+            WHERE p.codigo_unico = ?
         """, (codigo,))
         
         resultado = avis_cursor.fetchone()
@@ -97,7 +97,7 @@ async def receber_texto(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data_atual = datetime.now().strftime("%Y-%m-%d %H:%M")
         
         aljava_conn.execute(
-            "INSERT INTO impugnacao (texto, participante_id, agendamento_id, data_cadastro) VALUES (?, ?, ?)",
+            "INSERT INTO impugnacao (texto, participante_id, agendamento_id, data_cadastro) VALUES (?, ?, ?, ?)",
             (descricao, participante_id, agendamento_id, data_atual)
         )
         aljava_conn.commit()
@@ -138,7 +138,7 @@ async def receber_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 descricao = recognizer.recognize_google(audio_data, language='pt-BR')
                 
             aljava_conn.execute(
-                "INSERT INTO impugnacao (texto, participante_id, agendamento_id, data_cadastro) VALUES (?, ?, ?)",
+                "INSERT INTO impugnacao (texto, participante_id, agendamento_id, data_cadastro) VALUES (?, ?, ?, ?)",
                 (descricao, participante_id, agendamento_id, data_atual)
             )
             aljava_conn.commit()
@@ -160,3 +160,34 @@ async def receber_audio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Erro: {e}")
         return ConversationHandler.END
+
+async def escolha_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Processa a escolha do tipo de entrada (texto ou áudio).
+
+    Args:
+        update (Update): Objeto Update do Telegram
+        context (ContextTypes.DEFAULT_TYPE): Contexto do bot
+
+    Returns:
+        int: Próximo estado da conversa
+    """
+    escolha = update.message.text
+    if escolha == 'Texto':
+        await update.message.reply_text(
+            'Por favor, digite sua impugnação:',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return AGUARDANDO_TEXTO
+    elif escolha == 'Áudio':
+        await update.message.reply_text(
+            'Por favor, envie sua mensagem de voz com a impugnação:',
+            reply_markup=ReplyKeyboardRemove()
+        )
+        return AGUARDANDO_AUDIO
+    else:
+        await update.message.reply_text(
+            'Opção inválida. Por favor, escolha entre Texto ou Áudio.',
+            reply_markup=ReplyKeyboardMarkup([['Texto', 'Áudio']], one_time_keyboard=True)
+        )
+        return ESCOLHA_TIPO

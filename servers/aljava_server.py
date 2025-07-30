@@ -183,36 +183,5 @@ def transcrever_audio(numero_processo: str, agendamento_id: int, audio: bytes) -
             "erro": str(e)
         }
 
-@mcp.resource("file://arquivo/{nome_arquivo}")
-def retornar_arquivo(nome_arquivo: str) -> bytes:
-    """
-    Retorna o conteúdo de um arquivo.
-    
-    Args:
-        nome_arquivo (str): Nome do arquivo a ser buscado
-        
-    Returns:
-        bytes: Conteúdo do arquivo em bytes
-    
-    Raises:
-        Exception: Se o arquivo não for encontrado
-    """
-    try:
-        # Primeiro procura na pasta termos
-        if os.path.exists(os.path.join("termos", nome_arquivo)):
-            caminho = os.path.join("termos", nome_arquivo)
-        # Depois procura na pasta midias
-        elif os.path.exists(os.path.join("midias", nome_arquivo)):
-            caminho = os.path.join("midias", nome_arquivo)
-        else:
-            raise Exception(f"Arquivo '{nome_arquivo}' não encontrado")
-
-        # Lê e retorna o conteúdo do arquivo em bytes
-        with open(caminho, "rb") as f:
-            return f.read()
-
-    except Exception as e:
-        raise Exception(str(e))
-
 if __name__ == "__main__":
     mcp.run(transport="stdio")
